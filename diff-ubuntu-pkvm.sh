@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Current remotes are 
+# git://kernel.ubuntu.com/ubuntu/ubuntu-xenial.git
+# https://github.com/open-power-host-os/linux (branch powerkvm-v3.1.1)
+
 GIT_DIR=$1
 BRANCH1=$2
 BRANCH2=$3
