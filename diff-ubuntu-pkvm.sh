@@ -15,6 +15,7 @@ COMMIT_BRANCH2=$CUR_DIR/`mktemp commit.XXX`
 BRANCH_LOG1=$CUR_DIR/`mktemp branch_log.XXX`
 BRANCH_LOG2=$CUR_DIR/`mktemp branch_log.XXX`
 COMMENTS_BRANCH2=$CUR_DIR/`mktemp comments.XXX`
+AUX_FILE=$CUR_DIR/`mktemp aux_file.XXX`
 
 function usage() 
 {
@@ -44,12 +45,13 @@ function get_git_log()
 
 function search_commit()
 {
+	set +e
 	cut -f1 -d' ' $BRANCH_LOG2 > $COMMIT_BRANCH2
 	cut --fields=2- -d' ' $BRANCH_LOG2 > $COMMENTS_BRANCH2
-	fgrep -v -f $COMMIT_BRANCH2 $BRANCH_LOG1 > $CUR_DIR/diff_commits1.txt
-	fgrep -v -f $COMMENTS_BRANCH2 $CUR_DIR/diff_commits1.txt > $CUR_DIR/diff_commits-final.txt
-	fgrep -f $COMMENTS_BRANCH2 $CUR_DIR/diff_commits1.txt > $CUR_DIR/common_commits.txt
-	rm $CUR_DIR/diff_commits1.txt
+	fgrep -o -f $COMMIT_BRANCH2 $BRANCH_LOG1 > $AUX_FILE
+	fgrep -o -f $COMMENTS_BRANCH2 $BRANCH_LOG1 >> $AUX_FILE
+	fgrep -v -f $AUX_FILE $BRANCH_LOG2 > $CUR_DIR/diff_commits-final.txt
+	set -e
 }
 
 if [ ! -d $1 ]; then
