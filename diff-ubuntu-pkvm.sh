@@ -9,14 +9,6 @@ BRANCH1=$2
 BRANCH2=$3
 CUR_DIR=`pwd`
 
-# A lot of temorary files which will be deleted
-COMMIT_BRANCH1=$CUR_DIR/`mktemp commit.XXX`
-COMMIT_BRANCH2=$CUR_DIR/`mktemp commit.XXX`
-BRANCH_LOG1=$CUR_DIR/`mktemp branch_log.XXX`
-BRANCH_LOG2=$CUR_DIR/`mktemp branch_log.XXX`
-COMMENTS_BRANCH2=$CUR_DIR/`mktemp comments.XXX`
-AUX_FILE=$CUR_DIR/`mktemp aux_file.XXX`
-
 function usage() 
 {
 	cat <<-EOM
@@ -29,12 +21,13 @@ function usage()
 function get_git_log()
 {
 	cd $GIT_DIR
+	MERGE_BASE=`git merge-base $BRANCH1 $BRANCH2`
 	git checkout $BRANCH1
-	git log e2f712dc927e3b9a981ecd86a64d944d0b140322..HEAD --pretty=oneline > $BRANCH_LOG1
+	git log $MERGE_BASE..HEAD --pretty=oneline > $BRANCH_LOG1
 	git branch
 
 	git checkout $BRANCH2
-	git log e2f712dc927e3b9a981ecd86a64d944d0b140322..HEAD --pretty=oneline > $BRANCH_LOG2
+	git log $MERGE_BASE..HEAD --pretty=oneline > $BRANCH_LOG2
 	git branch
 }
 
@@ -65,7 +58,16 @@ else
 	fi
 fi
 
+# A lot of temorary files which will be deleted
+COMMIT_BRANCH1=$CUR_DIR/`mktemp commit.XXX`
+COMMIT_BRANCH2=$CUR_DIR/`mktemp commit.XXX`
+BRANCH_LOG1=$CUR_DIR/`mktemp branch_log.XXX`
+BRANCH_LOG2=$CUR_DIR/`mktemp branch_log.XXX`
+COMMENTS_BRANCH2=$CUR_DIR/`mktemp comments.XXX`
+AUX_FILE=$CUR_DIR/`mktemp aux_file.XXX`
+
 get_git_log
 search_commit
 cd $CUR_DIR
-rm $COMMIT_BRANCH1 $COMMIT_BRANCH2 $BRANCH_LOG1 $BRANCH_LOG2 $COMMENTS_BRANCH2
+rm $COMMIT_BRANCH1 $COMMIT_BRANCH2 $BRANCH_LOG1 $BRANCH_LOG2 \
+   $COMMENTS_BRANCH2 $AUX_FILE
