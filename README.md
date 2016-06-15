@@ -6,9 +6,9 @@ repositories.
 
 The branches must exist.
 To run the script:
-
-$ cd <linux-clone>
+```
+$ cd linux-clone
 $ /path/to/diff-ubuntu-pkvm.sh branch1 branch2
-
+```
 The result will be in the same format of a `git log --pretty=oneline`
 command output, in the file diff_commits-final.txt.
