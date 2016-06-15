@@ -4,15 +4,20 @@
 # git://kernel.ubuntu.com/ubuntu/ubuntu-xenial.git
 # https://github.com/open-power-host-os/linux (branch powerkvm-v3.1.1)
 
-GIT_DIR=$1
-BRANCH1=$2
-BRANCH2=$3
+BRANCH1=$1
+BRANCH2=$2
 CUR_DIR=`pwd`
+
+function finish()
+{
+	rm -rf $TMPDIR
+	echo "Temporary directory deleted."
+}
 
 function usage() 
 {
 	cat <<-EOM
-	Usage: $(basename $0) <directory> <branch1> <branch2> 
+	Usage: $(basename $0) <branch1> <branch2> 
 	EOM
 
 	exit 1
@@ -20,15 +25,16 @@ function usage()
 
 function get_git_log()
 {
-	cd $GIT_DIR
 	MERGE_BASE=`git merge-base $BRANCH1 $BRANCH2`
 	git checkout $BRANCH1
-	git log $MERGE_BASE..HEAD --pretty=oneline > $BRANCH_LOG1
 	git branch
+	git log --pretty=oneline | tr -s " " > $BRANCH_LOG1
+	echo "Branch $BRANCH1: log copied."
 
 	git checkout $BRANCH2
-	git log $MERGE_BASE..HEAD --pretty=oneline > $BRANCH_LOG2
 	git branch
+	git log $MERGE_BASE..HEAD --pretty=oneline | tr -s " " > $BRANCH_LOG2
+	echo "Branch $BRANCH2: log copied."
 }
 
 # First, the function below will create 2 files.
@@ -43,29 +49,33 @@ function search_commit()
 	cut --fields=2- -d' ' $BRANCH_LOG2 > $COMMENTS_BRANCH2
 	fgrep -o -f $COMMIT_BRANCH2 $BRANCH_LOG1 > $AUX_FILE
 	fgrep -o -f $COMMENTS_BRANCH2 $BRANCH_LOG1 >> $AUX_FILE
-	fgrep -v -f $AUX_FILE $BRANCH_LOG2 > $CUR_DIR/diff_commits-final.txt
+# The sed below removes the Linux versions commits from the result.
+	fgrep -v -f $AUX_FILE $BRANCH_LOG2 | \
+	    sed '/[a-f0-9]\{40\}\ Linux\ .\+/d' > diff_commits-final.txt
 	set -e
 }
 
-if [ ! -d $1 ]; then
-	echo "\"$1\" is not a valid directory"
+if [ -z $1 ] || [ -z $2 ]; then
 	usage
 	exit 1
-else
-	if [ -z $2 ] || [ -z $3 ]; then
-		usage
-		exit 1
-	fi
 fi
 
 # A lot of temorary files which will be deleted
-COMMIT_BRANCH1=`mktemp --tmpdir=/tmp commit.XXX`
-COMMIT_BRANCH2=`mktemp --tmpdir=/tmp commit.XXX`
-BRANCH_LOG1=`mktemp --tmpdir=/tmp branch_log.XXX`
-BRANCH_LOG2=`mktemp --tmpdir=/tmp branch_log.XXX`
-COMMENTS_BRANCH2=`mktemp --tmpdir=/tmp comments.XXX`
-AUX_FILE=`mktemp --tmpdir=/tmp aux_file.XXX`
+export TMPDIR=`mktemp -d scratch.XXX --tmpdir`
+COMMIT_BRANCH1=`mktemp commit1.XXX --tmpdir`
+COMMIT_BRANCH2=`mktemp commit2.XXX --tmpdir`
+BRANCH_LOG1=`mktemp branch_log1.XXX --tmpdir`
+BRANCH_LOG2=`mktemp branch_log2.XXX --tmpdir`
+COMMENTS_BRANCH2=`mktemp comments.XXX --tmpdir`
+AUX_FILE=`mktemp aux_file.XXX --tmpdir`
+
+trap finish EXIT
 
 get_git_log
 search_commit
-cd $CUR_DIR
+
+if [ $? -eq 0 ]
+then
+	echo "Finished!"
+	echo "Results can be verified in file diff_commits-final.txt"
+fi
