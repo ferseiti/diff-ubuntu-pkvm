@@ -43,8 +43,10 @@ function get_git_log()
 
 	git checkout $BRANCH2
 	git branch
-	git log --grep="\([Cc]ommit|[Bbased\ on\)\ [0-9a-f]\{40\}\ upstream\." --grep="[Uu]pstream commit\ [0-9a-f]\{40\}" \
-                --invert-grep $MERGE_BASE..HEAD --pretty=oneline | tr -s " " > $BRANCH_LOG2
+	git log --grep="\([Cc]ommit\|[Bb]ased\ on\)\ [0-9a-f]\{40\}\ upstream" \
+                --grep="[Uu]pstream commit\ [0-9a-f]\{40\}" \
+                --invert-grep $MERGE_BASE..HEAD --pretty=oneline | \
+                tr -s " " > $BRANCH_LOG2
 	echo "Branch $BRANCH2: log copied."
 }
 
