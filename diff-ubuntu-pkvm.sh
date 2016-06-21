@@ -8,6 +8,16 @@ BRANCH1=$1
 BRANCH2=$2
 CUR_DIR=`pwd`
 
+# A lot of temorary files which will be deleted
+export TMPDIR=`mktemp -d scratch.XXX --tmpdir`
+COMMIT_BRANCH1=`mktemp commit1.XXX --tmpdir`
+COMMIT_BRANCH2=`mktemp commit2.XXX --tmpdir`
+BRANCH_LOG1=`mktemp branch_log1.XXX --tmpdir`
+BRANCH_LOG2=`mktemp branch_log2.XXX --tmpdir`
+COMMENTS_BRANCH2=`mktemp comments.XXX --tmpdir`
+AUX_FILE=`mktemp aux_file.XXX --tmpdir`
+
+
 function finish()
 {
 	rm -rf $TMPDIR
@@ -33,7 +43,8 @@ function get_git_log()
 
 	git checkout $BRANCH2
 	git branch
-	git log $MERGE_BASE..HEAD --pretty=oneline | tr -s " " > $BRANCH_LOG2
+	git log --grep="\([Cc]ommit|[Bbased\ on\)\ [0-9a-f]\{40\}\ upstream\." --grep="[Uu]pstream commit\ [0-9a-f]\{40\}" \
+                --invert-grep $MERGE_BASE..HEAD --pretty=oneline | tr -s " " > $BRANCH_LOG2
 	echo "Branch $BRANCH2: log copied."
 }
 
@@ -49,6 +60,7 @@ function search_commit()
 	cut --fields=2- -d' ' $BRANCH_LOG2 > $COMMENTS_BRANCH2
 	fgrep -o -f $COMMIT_BRANCH2 $BRANCH_LOG1 > $AUX_FILE
 	fgrep -o -f $COMMENTS_BRANCH2 $BRANCH_LOG1 >> $AUX_FILE
+
 # The sed below removes the Linux versions commits from the result.
 	fgrep -v -f $AUX_FILE $BRANCH_LOG2 | \
 	    sed '/[a-f0-9]\{40\}\ Linux\ .\+/d' > diff_commits-final.txt
@@ -59,15 +71,6 @@ if [ -z $1 ] || [ -z $2 ]; then
 	usage
 	exit 1
 fi
-
-# A lot of temorary files which will be deleted
-export TMPDIR=`mktemp -d scratch.XXX --tmpdir`
-COMMIT_BRANCH1=`mktemp commit1.XXX --tmpdir`
-COMMIT_BRANCH2=`mktemp commit2.XXX --tmpdir`
-BRANCH_LOG1=`mktemp branch_log1.XXX --tmpdir`
-BRANCH_LOG2=`mktemp branch_log2.XXX --tmpdir`
-COMMENTS_BRANCH2=`mktemp comments.XXX --tmpdir`
-AUX_FILE=`mktemp aux_file.XXX --tmpdir`
 
 trap finish EXIT
 
