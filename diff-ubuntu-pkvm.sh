@@ -17,43 +17,48 @@ BRANCH_LOG2=`mktemp branch_log2.XXX --tmpdir`
 COMMENTS_BRANCH2=`mktemp comments.XXX --tmpdir`
 AUX_FILE=`mktemp aux_file.XXX --tmpdir`
 
+# This function will be used in a trap to remove temporary files on exit.
 function finish()
 {
-	rm -rf $TMPDIR
-	echo "Temporary directory deleted."
+    rm -rf $TMPDIR
+    echo "Temporary directory deleted."
 }
 
 function usage() 
 {
-	cat <<-EOM
-	Usage: $(basename $0) <branch1> <branch2> 
-	EOM
+    cat <<-EOM
+    Usage: $(basename $0) <branch1> <branch2> 
+    EOM
 
-	exit 1
+    exit 1
 }
 
+# The function get_git_log finds a possible ancestor for the branches provided
+# It then gets the whole log for the first one. The parcial log starting from
+# the ancestor for the second one, leaving out (tries to) upstream commits.
 function get_git_log()
 {
-	MERGE_BASE=`git merge-base $BRANCH1 $BRANCH2`
-	git checkout $BRANCH1
-	git branch
-	git log --pretty=oneline | tr -s " " > $BRANCH_LOG1
-	echo "Branch $BRANCH1: log copied."
+    MERGE_BASE=`git merge-base $BRANCH1 $BRANCH2`
+    git checkout $BRANCH1
+    git branch
+    git log --pretty=oneline | tr -s " " > $BRANCH_LOG1
+    echo "Branch $BRANCH1: log copied."
 
-	git checkout $BRANCH2
-	git branch
-	git log --grep="\([Cc]ommit\|[Bb]ased\ on\)\ [0-9a-f]\{40\}\ upstream" \
-                --grep="[Uu]pstream commit\ [0-9a-f]\{40\}" \
-                --invert-grep $MERGE_BASE..HEAD --pretty=oneline | \
-                tr -s " " > $BRANCH_LOG2
-	echo "Branch $BRANCH2: log copied."
+    git checkout $BRANCH2
+    git branch
+    git log --grep="\([Cc]ommit\|[Bb]ased\ on\)\ [0-9a-f]\{40\}\ upstream" \
+            --grep="[Uu]pstream commit\ [0-9a-f]\{40\}" \
+            --invert-grep $MERGE_BASE..HEAD --pretty=oneline | \
+            tr -s " " > $BRANCH_LOG2
+    echo "Branch $BRANCH2: log copied."
 }
 
 # First, the function below will create 2 files.
 # One with just the commit hashes and another with only the comment
 # header. Then it will run fgrep from each over the log and output the
-# difference to diff_commits-final.txt
-
+# difference to diff_commits-all.txt
+# It will then get all the commits that revert other commits and remove
+# both the removing and the removed ones.
 function search_commit()
 {
     set +e
@@ -79,13 +84,12 @@ function search_commit()
     set -e
 }
 
-#!/bin/bash
-
 if [ -z $1 ] || [ -z $2 ]; then
-	usage
-	exit 1
+    usage
+    exit 1
 fi
 
+# Trap that removes the temporary files on an exit event.
 trap finish EXIT
 
 get_git_log
@@ -93,6 +97,6 @@ search_commit
 
 if [ $? -eq 0 ]
 then
-	echo "Finished!"
-	echo "Results can be verified in file diff_commits-final.txt"
+    echo "Finished!"
+    echo "Results can be verified in file diff_commits-final.txt"
 fi
