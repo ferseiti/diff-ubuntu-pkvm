@@ -71,6 +71,10 @@ function search_commit()
     fgrep -v -f $AUX_FILE $BRANCH_LOG2 | \
         sed '/[a-f0-9]\{40\}\ Linux\ .\+/d' > diff_commits-all.txt
 
+    mkdir -p diff-reports
+    mv diff_commits-all.txt diff-reports
+    cd diff-reports
+
     git checkout $BRANCH2
     git log --grep="This\ reverts\ commit\ [0-9a-f]\{40\}" $MERGE_BASE..HEAD \
         --pretty=format:%H > $AUX_FILE
@@ -79,7 +83,7 @@ function search_commit()
     grep "This\ reverts\ commit\ [0-9a-f]\{40\}" reverts-show | \
          grep -o '[0-9a-f]\{40\}' >> $AUX_FILE
     fgrep -v -f $AUX_FILE diff_commits-all.txt > diff_commits-final.txt
-    git show -s `cut -f1 -d' ' diff_commits-final.txt | sed ':a;N;$!ba;s/\n/ /g'` > finalresultshow.txt
+    git show -s `cut -f1 -d' ' diff_commits-final.txt | sed ':a;N;$!ba;s/\n/ /g'` > git-show-result.txt
 
     set -e
 }
