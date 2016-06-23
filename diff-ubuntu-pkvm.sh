@@ -26,11 +26,8 @@ function finish()
 
 function usage() 
 {
-	cat <<-EOM
-	Usage: $(basename $0) <branch1> <branch2>
-	EOM
-
-	exit 1
+    echo "Usage: $(basename $0) <branch1> <branch2>"
+    exit 1
 }
 
 # The function get_git_log finds a possible ancestor for the branches provided
